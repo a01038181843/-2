@@ -30,7 +30,7 @@ const fetchGemini = async (prompt) => {
   const apiKey = "AIzaSyBD1gWNmjcda-FedtXBuf6hHLLPT8-lfYU"; 
   
   // 💡 구글 최신 정식 인공지능 모델 적용 완료!
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
   let retries = 3;
   let delay = 1000;
