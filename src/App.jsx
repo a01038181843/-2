@@ -24,12 +24,15 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 const appId = 'cheondo-inventory-system';
 
+// --- 에러 추적기가 달린 새로운 AI 연결 코드 ---
 const fetchGemini = async (prompt) => {
-  const apiKey = "AIzaSyBD1gWNmjcda-FedtXBuf6hHLLPT8-lfYU";
+  // 🚨 대표님이 직접 발급받으신 구글 AI 암호를 여기에 넣어야 합니다! (현재는 임시 암호가 적혀있습니다.)
+  const apiKey = "AIzaSyBD1gWNmjcda-FedtXBuf6hHLLPT8-lfYU"; 
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
-  let retries = 5;
+  let retries = 3;
   let delay = 1000;
+  let lastErrorMsg = "AI 응답을 가져오는데 실패했습니다.";
 
   while (retries >= 0) {
     try {
@@ -42,11 +45,17 @@ const fetchGemini = async (prompt) => {
         })
       });
 
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
       const data = await response.json();
+
+      // 구글 서버가 거절했다면, 그 "진짜 이유"를 화면에 띄우도록 에러를 던집니다!
+      if (!response.ok) {
+        throw new Error(`[구글 AI 오류] ${data.error?.message || response.statusText}`);
+      }
+
       return data.candidates?.[0]?.content?.parts?.[0]?.text;
     } catch (error) {
-      if (retries === 0) throw new Error("AI 응답을 가져오는데 실패했습니다.");
+      lastErrorMsg = error.message;
+      if (retries === 0) throw new Error(lastErrorMsg); // 마지막 시도까지 실패하면 화면에 에러 표시
       await new Promise(res => setTimeout(res, delay));
       delay *= 2;
       retries--;
@@ -79,7 +88,6 @@ export default function InventoryApp() {
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [isInstallable, setIsInstallable] = useState(false);
 
-  // === 정식 설치 프롬프트 대기 로직 ===
   useEffect(() => {
     const handleBeforeInstallPrompt = (e) => {
       e.preventDefault();
@@ -138,7 +146,7 @@ export default function InventoryApp() {
 
   const showToast = (message, type = 'success') => {
     setToast({ message, type });
-    setTimeout(() => setToast(null), 3000);
+    setTimeout(() => setToast(null), 3000); // 3초 뒤 메시지 창 사라짐
   };
 
   const generateId = () => Math.random().toString(36).substr(2, 9);
@@ -331,10 +339,12 @@ export default function InventoryApp() {
       2. 관리자가 즉시 취해야 할 구체적인 추천 액션 2가지
       를 보기 편한 마크다운 리스트 형태로 작성해주세요. (제목은 생략하고 내용만 바로 출력)
       `;
+      // AI 호출 후 결과를 받아옵니다. 여기서 에러가 나면 아래 catch 블록으로 바로 이동합니다.
       const report = await fetchGemini(prompt);
       if(report) setAiReport(report);
     } catch (e) {
-      showToast(e.message, 'error');
+      // 🚨 이 부분이 변경되었습니다! 에러 메시지를 5초 동안 화면에 빨간색으로 띄워줍니다.
+      showToast(e.message, 'error'); 
     } finally {
       setIsGeneratingReport(false);
     }
@@ -352,10 +362,12 @@ export default function InventoryApp() {
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 font-sans flex flex-col md:flex-row">
+      {/* 화면 우측 상단에 뜨는 알림(Toast) 메시지 영역 */}
       {toast && (
         <div className={`fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg flex items-center gap-2 text-white animate-fade-in ${toast.type === 'error' ? 'bg-red-500' : 'bg-emerald-500'}`}>
           {toast.type === 'error' ? <XCircle size={20} /> : <CheckCircle size={20} />}
-          <span>{toast.message}</span>
+          {/* 에러 메시지가 길면 다 보이도록 스타일 수정 */}
+          <span className="whitespace-pre-wrap text-sm">{toast.message}</span> 
         </div>
       )}
 
@@ -890,4 +902,3 @@ export default function InventoryApp() {
       </div>
     );
   }
-}
