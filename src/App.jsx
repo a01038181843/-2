@@ -28,7 +28,7 @@ const appId = 'cheondo-inventory-system';
 const fetchGemini = async (prompt) => {
   // 🚨 대표님이 직접 발급받으신 구글 AI 암호를 여기에 넣어야 합니다! (현재는 임시 암호가 적혀있습니다.)
   const apiKey = "AIzaSyBD1gWNmjcda-FedtXBuf6hHLLPT8-lfYU"; 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`;
 
   let retries = 3;
   let delay = 1000;
