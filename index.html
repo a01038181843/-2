@@ -2,9 +2,25 @@
 <html lang="ko">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>천도글라스 재고관리</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- 정식 앱 설치 파일 연결 -->
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#2563eb" />
+    <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMjU2M2ViIiBzdHJva2Utd2lkdGg9IjIiPjxwYXRoIGQ9Ik0xNi41IDkuNEwxMiAzIDcuNSA5LjRWMjFoOVY5LjR6Ii8+PHBhdGggZD0iTTMgMTUuNGw0LjUtNi40djExSDN6Ii8+PHBhdGggZD0iTTIxIDE1LjRsLTQuNS02LjR2MTFIMjF6Ii8+PC9zdmc+">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    
+    <script src="[https://cdn.tailwindcss.com](https://cdn.tailwindcss.com)"></script>
+    
+    <!-- 정식 서비스 워커 연결 -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js').catch(()=>{});
+        });
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>
