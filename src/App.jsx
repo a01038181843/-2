@@ -26,11 +26,11 @@ const appId = 'cheondo-inventory-system';
 
 // --- 에러 추적기가 달린 새로운 AI 연결 코드 ---
 const fetchGemini = async (prompt) => {
-  // 🚨 대표님의 진짜 API 키 적용 완료!
+  // 🚨 대표님의 진짜 API 키가 삽입되었습니다!
   const apiKey = "AIzaSyBD1gWNmjcda-FedtXBuf6hHLLPT8-lfYU"; 
   
-  // 💡 구글 최신 정식 인공지능 모델 적용 완료!
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+  // 💡 에러 해결: 구글 최신 인공지능 모델 이름으로 원상 복구 완료! (이전 버전은 구글에서 폐기됨)
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
 
   let retries = 3;
   let delay = 1000;
@@ -345,7 +345,7 @@ export default function InventoryApp() {
       const report = await fetchGemini(prompt);
       if(report) setAiReport(report);
     } catch (e) {
-      // 🚨 이 부분이 변경되었습니다! 에러 메시지를 5초 동안 화면에 빨간색으로 띄워줍니다.
+      // 에러 메시지를 5초 동안 화면에 빨간색으로 띄워줍니다.
       showToast(e.message, 'error'); 
     } finally {
       setIsGeneratingReport(false);
