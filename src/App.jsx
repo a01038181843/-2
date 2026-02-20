@@ -193,11 +193,12 @@ export default function InventoryApp() {
       return;
     }
     
-    const isDuplicateSKU = products.some(p => p.sku === productData.sku && p.id !== productData.id);
-    if (isDuplicateSKU) {
-      showToast('이미 존재하는 SKU(고유코드)입니다.', 'error');
-      return;
-    }
+    // 💡 [업그레이드 완료] 같은 고유번호(SKU)에 여러 색상/옵션을 등록할 수 있도록 중복 검사 족쇄를 해제했습니다!
+    // const isDuplicateSKU = products.some(p => p.sku === productData.sku && p.id !== productData.id);
+    // if (isDuplicateSKU) {
+    //   showToast('이미 존재하는 SKU(고유코드)입니다.', 'error');
+    //   return;
+    // }
 
     try {
       const targetId = productData.id || generateId();
