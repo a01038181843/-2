@@ -24,46 +24,50 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 const appId = 'cheondo-inventory-system';
 
-// --- 에러 추적기가 달린 새로운 AI 연결 코드 ---
+// --- 무적의 AI 자동 탐색 코드 ---
 const fetchGemini = async (prompt) => {
-  // 🚨 대표님의 진짜 API 키가 삽입되었습니다!
+  // 🚨 대표님의 진짜 API 키
   const apiKey = "AIzaSyBD1gWNmjcda-FedtXBuf6hHLLPT8-lfYU"; 
-  
-  // 💡 구글 서버에 존재하는 모델을 자동으로 찾아주는 '스마트 탐색' 로직 (오류 100% 방어)
-  const modelsToTry = [
-    "gemini-2.5-flash",
-    "gemini-2.0-flash",
-    "gemini-1.5-flash",
-    "gemini-pro"
-  ];
 
-  for (let model of modelsToTry) {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-    try {
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          systemInstruction: { parts: [{ text: "당신은 천도글라스의 재고 관리 및 건축/유리 자재 전문가입니다. 한국어로 전문적이고 간결하게 답변하세요." }] }
-        })
-      });
+  try {
+    // 1단계: 구글 서버에 "이 암호로 쓸 수 있는 AI 목록 줘!" 라고 요청합니다.
+    const listUrl = `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`;
+    const listRes = await fetch(listUrl);
+    if (!listRes.ok) throw new Error("API 키 권한 오류입니다. 구글 AI Studio 설정을 확인해주세요.");
 
-      const data = await response.json();
+    const listData = await listRes.json();
+    const models = listData.models || [];
 
-      // 성공하면 바로 결과 반환!
-      if (response.ok) {
-        return data.candidates?.[0]?.content?.parts?.[0]?.text;
-      }
-      // 실패하면 다음 모델 이름으로 다시 시도
-      console.warn(`[AI 모델 탐색] ${model} 실패, 다음 모델을 시도합니다.`);
-    } catch (error) {
-      console.warn(`[네트워크 오류] ${model} 실패`);
+    // 2단계: 쓸 수 있는 목록 중에서 답변 생성(generateContent)이 가능한 모델을 찾습니다.
+    let targetModel = models.find(m => m.name.includes("flash") && m.supportedGenerationMethods?.includes("generateContent"));
+    if (!targetModel) {
+      targetModel = models.find(m => m.name.includes("gemini") && m.supportedGenerationMethods?.includes("generateContent"));
     }
-  }
 
-  // 모든 모델 이름이 실패했을 경우의 최후 에러 메시지
-  throw new Error("현재 구글 서버에서 지원하는 AI 모델을 찾을 수 없습니다.");
+    // 만약 진짜로 쓸 수 있는 게 하나도 없다면 에러를 뿜습니다.
+    if (!targetModel) throw new Error("현재 계정에서 사용 가능한 AI 모델이 구글 서버에 없습니다.");
+
+    // 3단계: 찾아낸 정답 모델 이름(targetModel.name)으로 진짜 요청을 보냅니다!
+    const url = `https://generativelanguage.googleapis.com/v1beta/${targetModel.name}:generateContent?key=${apiKey}`;
+
+    // (오류 원천 차단: 모든 모델이 알아들을 수 있도록 지시사항을 질문에 합칩니다)
+    const fullPrompt = "당신은 천도글라스의 재고 관리 및 건축/유리 자재 전문가입니다. 한국어로 전문적이고 간결하게 답변하세요.\n\n" + prompt;
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: fullPrompt }] }]
+      })
+    });
+
+    const data = await response.json();
+    if (!response.ok) throw new Error(`[AI 응답 오류] ${data.error?.message}`);
+
+    return data.candidates?.[0]?.content?.parts?.[0]?.text;
+  } catch (error) {
+    throw new Error(error.message);
+  }
 };
 
 export default function InventoryApp() {
@@ -149,7 +153,7 @@ export default function InventoryApp() {
 
   const showToast = (message, type = 'success') => {
     setToast({ message, type });
-    setTimeout(() => setToast(null), 3000); // 3초 뒤 메시지 창 사라짐
+    setTimeout(() => setToast(null), 3000);
   };
 
   const generateId = () => Math.random().toString(36).substr(2, 9);
@@ -342,11 +346,9 @@ export default function InventoryApp() {
       2. 관리자가 즉시 취해야 할 구체적인 추천 액션 2가지
       를 보기 편한 마크다운 리스트 형태로 작성해주세요. (제목은 생략하고 내용만 바로 출력)
       `;
-      // AI 호출 후 결과를 받아옵니다. 여기서 에러가 나면 아래 catch 블록으로 바로 이동합니다.
       const report = await fetchGemini(prompt);
       if(report) setAiReport(report);
     } catch (e) {
-      // 에러 메시지를 5초 동안 화면에 빨간색으로 띄워줍니다.
       showToast(e.message, 'error'); 
     } finally {
       setIsGeneratingReport(false);
@@ -365,11 +367,9 @@ export default function InventoryApp() {
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 font-sans flex flex-col md:flex-row">
-      {/* 화면 우측 상단에 뜨는 알림(Toast) 메시지 영역 */}
       {toast && (
         <div className={`fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg flex items-center gap-2 text-white animate-fade-in ${toast.type === 'error' ? 'bg-red-500' : 'bg-emerald-500'}`}>
           {toast.type === 'error' ? <XCircle size={20} /> : <CheckCircle size={20} />}
-          {/* 에러 메시지가 길면 다 보이도록 스타일 수정 */}
           <span className="whitespace-pre-wrap text-sm">{toast.message}</span> 
         </div>
       )}
