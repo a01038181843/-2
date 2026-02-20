@@ -79,53 +79,16 @@ export default function InventoryApp() {
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [isInstallable, setIsInstallable] = useState(false);
 
+  // === 정식 설치 프롬프트 대기 로직 ===
   useEffect(() => {
-    try {
-      if (!document.getElementById('pwa-manifest')) {
-        const manifest = {
-          name: "천도글라스 재고관리",
-          short_name: "천도글라스",
-          description: "천도글라스 실시간 재고 관리 시스템",
-          start_url: ".",
-          display: "standalone",
-          background_color: "#f8fafc",
-          theme_color: "#2563eb",
-          icons: [
-            {
-              src: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMjU2M2ViIiBzdHJva2Utd2lkdGg9IjIiPjxwYXRoIGQ9Ik0xNi41IDkuNEwxMiAzIDcuNSA5LjRWMjFoOVY5LjR6Ii8+PHBhdGggZD0iTTMgMTUuNGw0LjUtNi40djExSDN6Ii8+PHBhdGggZD0iTTIxIDE1LjRsLTQuNS02LjR2MTFIMjF6Ii8+PC9zdmc+",
-              sizes: "192x192",
-              type: "image/svg+xml",
-              purpose: "any maskable"
-            }
-          ]
-        };
-        const manifestBlob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
-        const manifestUrl = URL.createObjectURL(manifestBlob);
-        const link = document.createElement('link');
-        link.id = 'pwa-manifest';
-        link.rel = 'manifest';
-        link.href = manifestUrl;
-        document.head.appendChild(link);
-      }
+    const handleBeforeInstallPrompt = (e) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      setIsInstallable(true);
+    };
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
 
-      if ('serviceWorker' in navigator) {
-        const swCode = `self.addEventListener('fetch', function(e) {});`; 
-        const swBlob = new Blob([swCode], { type: 'application/javascript' });
-        const swUrl = URL.createObjectURL(swBlob);
-        navigator.serviceWorker.register(swUrl).catch(() => {}); 
-      }
-
-      const handleBeforeInstallPrompt = (e) => {
-        e.preventDefault();
-        setDeferredPrompt(e);
-        setIsInstallable(true);
-      };
-      window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-
-      return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    } catch (error) {
-      console.warn("앱 설치 초기화 오류 방어", error);
-    }
+    return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
   }, []);
 
   const handleInstallApp = async () => {
