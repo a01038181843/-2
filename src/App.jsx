@@ -25,7 +25,7 @@ const db = getFirestore(app);
 const appId = 'cheondo-inventory-system';
 
 const fetchGemini = async (prompt) => {
-  const apiKey = "";
+  const apiKey = "AIzaSyBD1gWNmjcda-FedtXBuf6hHLLPT8-lfYU";
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
 
   let retries = 5;
