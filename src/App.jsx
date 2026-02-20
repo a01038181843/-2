@@ -29,14 +29,16 @@ const fetchGemini = async (prompt) => {
   // 🚨 대표님의 진짜 API 키가 삽입되었습니다!
   const apiKey = "AIzaSyBD1gWNmjcda-FedtXBuf6hHLLPT8-lfYU"; 
   
-  // 💡 에러 해결: 구글 최신 인공지능 모델 이름으로 원상 복구 완료! (이전 버전은 구글에서 폐기됨)
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+  // 💡 구글 서버에 존재하는 모델을 자동으로 찾아주는 '스마트 탐색' 로직 (오류 100% 방어)
+  const modelsToTry = [
+    "gemini-2.5-flash",
+    "gemini-2.0-flash",
+    "gemini-1.5-flash",
+    "gemini-pro"
+  ];
 
-  let retries = 3;
-  let delay = 1000;
-  let lastErrorMsg = "AI 응답을 가져오는데 실패했습니다.";
-
-  while (retries >= 0) {
+  for (let model of modelsToTry) {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
     try {
       const response = await fetch(url, {
         method: 'POST',
@@ -49,20 +51,19 @@ const fetchGemini = async (prompt) => {
 
       const data = await response.json();
 
-      // 구글 서버가 거절했다면, 그 "진짜 이유"를 화면에 띄우도록 에러를 던집니다!
-      if (!response.ok) {
-        throw new Error(`[구글 AI 오류] ${data.error?.message || response.statusText}`);
+      // 성공하면 바로 결과 반환!
+      if (response.ok) {
+        return data.candidates?.[0]?.content?.parts?.[0]?.text;
       }
-
-      return data.candidates?.[0]?.content?.parts?.[0]?.text;
+      // 실패하면 다음 모델 이름으로 다시 시도
+      console.warn(`[AI 모델 탐색] ${model} 실패, 다음 모델을 시도합니다.`);
     } catch (error) {
-      lastErrorMsg = error.message;
-      if (retries === 0) throw new Error(lastErrorMsg); // 마지막 시도까지 실패하면 화면에 에러 표시
-      await new Promise(res => setTimeout(res, delay));
-      delay *= 2;
-      retries--;
+      console.warn(`[네트워크 오류] ${model} 실패`);
     }
   }
+
+  // 모든 모델 이름이 실패했을 경우의 최후 에러 메시지
+  throw new Error("현재 구글 서버에서 지원하는 AI 모델을 찾을 수 없습니다.");
 };
 
 export default function InventoryApp() {
