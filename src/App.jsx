@@ -24,50 +24,54 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 const appId = 'cheondo-inventory-system';
 
-// --- 무적의 AI 자동 탐색 코드 ---
+// --- 무적의 AI 직접 두드리기 코드 (권한 오류 완벽 방어) ---
 const fetchGemini = async (prompt) => {
   // 🚨 대표님의 진짜 API 키
   const apiKey = "AIzaSyBD1gWNmjcda-FedtXBuf6hHLLPT8-lfYU"; 
 
-  try {
-    // 1단계: 구글 서버에 "이 암호로 쓸 수 있는 AI 목록 줘!" 라고 요청합니다.
-    const listUrl = `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`;
-    const listRes = await fetch(listUrl);
-    if (!listRes.ok) throw new Error("API 키 권한 오류입니다. 구글 AI Studio 설정을 확인해주세요.");
+  // 💡 전체 목록을 달라고 하지 않고, 최신 버전부터 차례대로 직접 찔러봅니다!
+  const modelsToTry = [
+    "gemini-2.5-flash",
+    "gemini-2.0-flash",
+    "gemini-1.5-flash",
+    "gemini-pro"
+  ];
 
-    const listData = await listRes.json();
-    const models = listData.models || [];
+  const fullPrompt = "당신은 천도글라스의 재고 관리 및 건축/유리 자재 전문가입니다. 한국어로 전문적이고 간결하게 답변하세요.\n\n" + prompt;
+  let lastError = "";
 
-    // 2단계: 쓸 수 있는 목록 중에서 답변 생성(generateContent)이 가능한 모델을 찾습니다.
-    let targetModel = models.find(m => m.name.includes("flash") && m.supportedGenerationMethods?.includes("generateContent"));
-    if (!targetModel) {
-      targetModel = models.find(m => m.name.includes("gemini") && m.supportedGenerationMethods?.includes("generateContent"));
+  for (let model of modelsToTry) {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: fullPrompt }] }]
+        })
+      });
+
+      const data = await response.json();
+
+      // 성공하면 즉시 결과 반환! (오류 없이 통과)
+      if (response.ok) {
+        return data.candidates?.[0]?.content?.parts?.[0]?.text;
+      } else {
+        // 만약 권한 오류(403)나 잘못된 요청(400)이라면 아예 암호 자체의 문제이므로 멈춥니다.
+        if (response.status === 403 || response.status === 400) {
+           throw new Error(`API 키 권한 오류입니다. (구글 AI Studio에서 API 키의 권한을 확인해주세요. 상세: ${data.error?.message})`);
+        }
+        // 모델을 못 찾는 에러(404)라면 다음 모델로 넘어갑니다.
+        lastError = data.error?.message || "알 수 없는 오류";
+        continue;
+      }
+    } catch (error) {
+      lastError = error.message;
     }
-
-    // 만약 진짜로 쓸 수 있는 게 하나도 없다면 에러를 뿜습니다.
-    if (!targetModel) throw new Error("현재 계정에서 사용 가능한 AI 모델이 구글 서버에 없습니다.");
-
-    // 3단계: 찾아낸 정답 모델 이름(targetModel.name)으로 진짜 요청을 보냅니다!
-    const url = `https://generativelanguage.googleapis.com/v1beta/${targetModel.name}:generateContent?key=${apiKey}`;
-
-    // (오류 원천 차단: 모든 모델이 알아들을 수 있도록 지시사항을 질문에 합칩니다)
-    const fullPrompt = "당신은 천도글라스의 재고 관리 및 건축/유리 자재 전문가입니다. 한국어로 전문적이고 간결하게 답변하세요.\n\n" + prompt;
-
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: fullPrompt }] }]
-      })
-    });
-
-    const data = await response.json();
-    if (!response.ok) throw new Error(`[AI 응답 오류] ${data.error?.message}`);
-
-    return data.candidates?.[0]?.content?.parts?.[0]?.text;
-  } catch (error) {
-    throw new Error(error.message);
   }
+
+  // 준비된 모든 방을 두드렸는데도 다 실패했을 때만 에러를 띄웁니다.
+  throw new Error(`AI 연결 실패. (상세 오류: ${lastError})`);
 };
 
 export default function InventoryApp() {
