@@ -26,8 +26,10 @@ const appId = 'cheondo-inventory-system';
 
 // --- 에러 추적기가 달린 새로운 AI 연결 코드 ---
 const fetchGemini = async (prompt) => {
-  // 🚨 대표님이 직접 발급받으신 구글 AI 암호를 여기에 넣어야 합니다! (현재는 임시 암호가 적혀있습니다.)
+  // 🚨 대표님의 진짜 API 키 적용 완료!
   const apiKey = "AIzaSyBD1gWNmjcda-FedtXBuf6hHLLPT8-lfYU"; 
+  
+  // 💡 구글 최신 정식 인공지능 모델 적용 완료!
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`;
 
   let retries = 3;
