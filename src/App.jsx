@@ -5,12 +5,10 @@ import {
   TrendingUp, TrendingDown, Clock, Sparkles, Loader2, Database, Download
 } from 'lucide-react';
 
-// Firebase 라이브러리 임포트
 import { initializeApp } from 'firebase/app';
 import { getAuth, signInAnonymously, onAuthStateChanged } from 'firebase/auth';
 import { getFirestore, collection, onSnapshot, doc, deleteDoc, writeBatch } from 'firebase/firestore';
 
-// --- [천도글라스 전용] Firebase 클라우드 데이터베이스 세팅 ---
 const firebaseConfig = {
   apiKey: "AIzaSyAR_VCccZQwhq4s_hhUFbKAwYmSb6tT6Ic",
   authDomain: "cheondoglass.firebaseapp.com",
@@ -21,15 +19,13 @@ const firebaseConfig = {
   measurementId: "G-P66Z4H5DV6"
 };
 
-// 클라우드 서버 초기화 (오류 방어 로직 적용)
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
-const appId = 'cheondo-inventory-system'; // 천도글라스 전용 고유 경로 이름
+const appId = 'cheondo-inventory-system';
 
-// --- Gemini AI 연동 헬퍼 함수 ---
 const fetchGemini = async (prompt) => {
-  const apiKey = ""; // API Key는 실행 환경에서 동적으로 주입됩니다.
+  const apiKey = "";
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
 
   let retries = 5;
@@ -61,13 +57,11 @@ const fetchGemini = async (prompt) => {
 export default function InventoryApp() {
   const [activeTab, setActiveTab] = useState('dashboard');
   
-  // 클라우드 실시간 연동 상태
   const [user, setUser] = useState(null);
   const [products, setProducts] = useState([]);
   const [logs, setLogs] = useState([]);
   const [isDbReady, setIsDbReady] = useState(false);
   
-  // 상태 관리 (모달 및 알림)
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
   const [isAdjustModalOpen, setIsAdjustModalOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
@@ -76,19 +70,15 @@ export default function InventoryApp() {
   const [toast, setToast] = useState(null);
   const [showInstallGuide, setShowInstallGuide] = useState(false);
 
-  // 검색 및 필터
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('All');
 
-  // AI 리포트 상태
   const [aiReport, setAiReport] = useState(null);
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
 
-  // --- PWA 앱 설치(다운로드) 상태 ---
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [isInstallable, setIsInstallable] = useState(false);
 
-  // --- PWA (웹앱 설치) 초기화 ---
   useEffect(() => {
     try {
       if (!document.getElementById('pwa-manifest')) {
@@ -149,7 +139,6 @@ export default function InventoryApp() {
     setDeferredPrompt(null);
   };
 
-  // --- 클라우드 인증 및 실시간 동기화 ---
   useEffect(() => {
     const initAuth = async () => {
       try {
@@ -184,7 +173,6 @@ export default function InventoryApp() {
     return () => { unsubProducts(); unsubLogs(); };
   }, [user]);
 
-  // --- 유틸리티 함수 ---
   const showToast = (message, type = 'success') => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 3000);
@@ -192,7 +180,6 @@ export default function InventoryApp() {
 
   const generateId = () => Math.random().toString(36).substr(2, 9);
 
-  // --- 비즈니스 로직 (클라우드 DB 연동) ---
   const handleSaveProduct = async (productData) => {
     if (!user) return;
     if (!productData.name || !productData.sku || !productData.category) {
@@ -335,7 +322,6 @@ export default function InventoryApp() {
     }
   };
 
-  // 샘플 데이터 
   const handleSeedData = async () => {
     if (!user) return;
     try {
@@ -354,7 +340,6 @@ export default function InventoryApp() {
     }
   };
 
-  // 데이터 계산
   const totalProducts = products.length;
   const lowStockProducts = products.filter(p => p.quantity <= 10);
   const totalInventoryValue = products.reduce((acc, p) => acc + (p.price * p.quantity), 0);
@@ -687,7 +672,6 @@ export default function InventoryApp() {
         )}
       </main>
 
-      {/* 모달창 구역 */}
       {isProductModalOpen && (
         <ProductModal 
           product={selectedProduct} 
@@ -704,7 +688,6 @@ export default function InventoryApp() {
         />
       )}
 
-      {/* 제품 삭제 커스텀 모달 */}
       {productToDelete && (
         <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center p-4 z-50 animate-fade-in">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden p-6 text-center border border-red-100">
@@ -725,7 +708,6 @@ export default function InventoryApp() {
         </div>
       )}
 
-      {/* 입출고 내역 삭제 커스텀 모달 */}
       {logToDelete && (
         <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center p-4 z-50 animate-fade-in">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden p-6 text-center border border-orange-100">
@@ -749,7 +731,6 @@ export default function InventoryApp() {
         </div>
       )}
 
-      {/* 앱 설치 안내 커스텀 모달 */}
       {showInstallGuide && (
         <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center p-4 z-50 animate-fade-in">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
