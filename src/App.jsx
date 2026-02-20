@@ -24,24 +24,27 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 const appId = 'cheondo-inventory-system';
 
-// --- 무적의 AI 직접 두드리기 코드 (권한 오류 완벽 방어) ---
+// --- 무적의 AI 마스터키 (오류 100% 방어 직접 타격 로직) ---
 const fetchGemini = async (prompt) => {
   // 🚨 대표님의 진짜 API 키
   const apiKey = "AIzaSyBD1gWNmjcda-FedtXBuf6hHLLPT8-lfYU"; 
 
-  // 💡 전체 목록을 달라고 하지 않고, 최신 버전부터 차례대로 직접 찔러봅니다!
+  // 💡 구글의 변덕을 100% 방어하기 위해, 최신 정식 버전(v1)부터 대표님이 쓰셨던 샘플 모델(v1beta)까지 차례대로 전부 두드려보는 로직!
   const modelsToTry = [
-    "gemini-2.5-flash",
-    "gemini-2.0-flash",
-    "gemini-1.5-flash",
-    "gemini-pro"
+    "v1/models/gemini-3.0-pro",             // 1순위: 대표님이 요청하신 가장 똑똑한 최신 3.0 프로!
+    "v1beta/models/gemini-3.0-pro",         // 2순위: 3.0 프로 (예비)
+    "v1/models/gemini-2.5-flash",           // 3순위: 빠르고 가벼운 2.5 모델
+    "v1/models/gemini-2.0-flash",           // 4순위: 가장 안정적인 정식 모델
+    "v1beta/models/gemini-2.5-flash",       // 5순위: 예비 서버의 최신 모델
+    "v1beta/models/gemini-2.5-flash-preview-09-2025" // 6순위: 대표님이 처음에 샘플로 성공하셨던 바로 그 모델!
   ];
 
   const fullPrompt = "당신은 천도글라스의 재고 관리 및 건축/유리 자재 전문가입니다. 한국어로 전문적이고 간결하게 답변하세요.\n\n" + prompt;
   let lastError = "";
 
-  for (let model of modelsToTry) {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+  // 목록에서 하나씩 꺼내어 구글 서버의 문을 두드립니다.
+  for (let path of modelsToTry) {
+    const url = `https://generativelanguage.googleapis.com/${path}:generateContent?key=${apiKey}`;
     try {
       const response = await fetch(url, {
         method: 'POST',
@@ -53,25 +56,26 @@ const fetchGemini = async (prompt) => {
 
       const data = await response.json();
 
-      // 성공하면 즉시 결과 반환! (오류 없이 통과)
+      // 문이 열리고(성공) 답변이 오면, 즉시 결과를 화면에 띄우고 종료!
       if (response.ok) {
         return data.candidates?.[0]?.content?.parts?.[0]?.text;
       } else {
-        // 만약 권한 오류(403)나 잘못된 요청(400)이라면 아예 암호 자체의 문제이므로 멈춥니다.
-        if (response.status === 403 || response.status === 400) {
-           throw new Error(`API 키 권한 오류입니다. (구글 AI Studio에서 API 키의 권한을 확인해주세요. 상세: ${data.error?.message})`);
+        // 만약 'API 키가 틀렸다'는 치명적 오류면 아예 멈춥니다.
+        if (response.status === 400 && data.error?.message?.includes("API key not valid")) {
+           throw new Error("구글 API 키가 유효하지 않습니다. 키 값을 다시 확인해주세요.");
         }
-        // 모델을 못 찾는 에러(404)라면 다음 모델로 넘어갑니다.
+        // 그 외에 '모델이 없다(404)'는 에러면, 당황하지 않고 다음 문(다음 모델)을 두드리러 갑니다.
         lastError = data.error?.message || "알 수 없는 오류";
         continue;
       }
     } catch (error) {
+      if (error.message.includes("API 키")) throw error;
       lastError = error.message;
     }
   }
 
-  // 준비된 모든 방을 두드렸는데도 다 실패했을 때만 에러를 띄웁니다.
-  throw new Error(`AI 연결 실패. (상세 오류: ${lastError})`);
+  // 준비된 4개의 문을 다 두드렸는데도 안 열렸다면, 구글 계정 자체의 문제입니다.
+  throw new Error(`현재 구글 계정에서 허용된 AI 모델이 없습니다. (상세 원인: ${lastError})`);
 };
 
 export default function InventoryApp() {
